@@ -10,12 +10,13 @@ class ProductTestCase(unittest.TestCase):
     def setUp(self):
         '''Initialize the scenario for the test'''
         
-        self.webscraper = webscraper.jobsite()
+        self.webscraper = self.webscraper.jobsite()
         
-    def test_transform_name(self):
-        expected_value = 'SHOES'
-        actual_value = self.product.transform_name_for_sku()
-        self.assertEqual(expected_value, actual_value)
+    def test_scrape_data(self):
+        '''Test the scrape data method.'''
+        
+        self.webscraper.scrape_data()
+        self.assertEqual(len(self.webscraper.job_results), 10)
         
     def tearDown(self):
         
