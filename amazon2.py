@@ -4,7 +4,13 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 import time
 from selenium.webdriver.common.keys import Keys
-from bs4 import BeautifulSoup
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import os
+import urllib
+import wget
+import socket
+import ssl
 
 class amazon:
     
@@ -14,7 +20,8 @@ class amazon:
         opt = webdriver.ChromeOptions()
         opt.headless = True
         opt.add_argument("--disable-notifications")
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=opt)
+        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
+        # self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=opt)
         self.driver.get(website)
         self.driver.implicitly_wait(10)
         
@@ -23,9 +30,6 @@ class amazon:
         xpath_accept_cookies = "//input[@type='submit' and @id='sp-cc-accept']"
         accept_button = self.driver.find_element(By.XPATH, xpath_accept_cookies)
         accept_button.click()
-        
-    def download_images(self):
-        '''Downloading images...'''
         
     def search(self):        
         '''Searching for the product in the Amazon website.'''
@@ -39,25 +43,34 @@ class amazon:
         accept_button = self.driver.find_element(By.XPATH, xpath_click_apple)
         accept_button.click()
         
+        img = self.driver.find_elements(by=By.XPATH, value="//img[@class='s-image']")
+        print(len(img))
+
+        src = [i.get_attribute('src') for i in img]
+        print(len(src))
         
-        
-        # Beautiful Soup
-        # soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-        # results = soup.find_all("div", {"class": "a-section a-spacing-none s-padding-right-small s-title-instructions-style"}) 
-        # l = len(results)
-        # print(l)
-        
-        # item = results[0]
-        # rating_tag = item.h2.a
-        # description_tag = rating_tag.text.strip()
-        # print(description_tag)
-        # url = "https://www.amazon.co.uk" + rating_tag.get('href')
-        # print(url)
-        
-        # price = item.find('span', 'a-price')
-        # phone_price = price.find('span', 'a-offscreen').text
-        # print(phone_price)
-        
+        image_path = os.getcwd()
+        image_path = os.path.join(image_path, 'images')
+        if not os.path.exists(image_path):
+            os.mkdir(image_path)
+            print(image_path)
+
+        count = 0
+        for i in enumerate(image_path):
+            try:
+                if src != None:
+                    src = str(src)
+                    print(src)
+                  
+                    for i in src:
+                        save_as = os.path.join(image_path, 'image' + str(count) + '.jpg')
+                        wget.download(i, save_as)     
+                        count += 1    
+                    # urllib.request.urlretrieve(src, os.path.join(image_path, str(count) + '.gif'))
+                else:
+                    raise TypeError
+            except Exception as e:
+                print(f'The error is {e}')
 if __name__ == "__main__":  
     '''Main function...'''
     amz = amazon()

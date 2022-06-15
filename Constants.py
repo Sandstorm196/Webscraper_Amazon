@@ -13,5 +13,4 @@ SALARY_XPATH = '//dl[@class="sc-fzoJMP jpodhy" and @data-at="job-item-salary-inf
 COMPANY_XPATH = '//div[@class="sc-fzoiQi kuzZTz"]'
 POSTED_XPATH = '//ul[@class="sc-fznLxA bAwAgE"]/li[2]'
 DESCRIPTION_XPATH = '//div[@class="sc-fzoYkl kSkZOQ"]/a/span'
-IMAGE_XPATH = '//div[@class="sc-fznxsB eaghqC"]/a/img'
 JOB_REF_XPATH = '//div[@class="sc-fzoYkl kSkZOQ"]/a'
