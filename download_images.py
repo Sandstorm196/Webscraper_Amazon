@@ -1,4 +1,8 @@
-from itertools import count
+import io
+import shutil
+import ssl
+from types import NoneType
+import certifi
 import requests
 import Constants
 import uuid
@@ -15,24 +19,16 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import urllib
+import urllib.parse
+from PIL import Image
+
 
 options = Options()
-options.add_argument("start-maximized")
+options.headless = True
+options.add_argument("--headless")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 driver.get(Constants.URL)
 
-# opt = webdriver.ChromeOptions()
-# opt.headless = False
-# opt.add_argument("--headless")
-# opt.add_argument("--disable-notifications")
-# opt.add_argument("--disable-dev-shm-usage")
-# opt.add_argument("--disable-gpu")
-# opt.add_argument( "--no-sandbox")
-# opt.add_argument("--disable-setuid-sandbox",)
-# opt.add_argument('--ignore-certificate-errors')
-# opt.add_argument("--test-type")
-# driver = webdriver.Chrome(ChromeDriverManager().install(), options=opt)
-# driver.get(Constants.URL)
 driver.implicitly_wait(10)
 
 cookie = driver.find_element(by=By.XPATH, value=Constants.COOKIE_XPATH)
@@ -62,38 +58,65 @@ search.click()
 # time.sleep(3)
 driver.implicitly_wait(10)
 
-img = driver.find_elements(by=By.XPATH, value='//div[@class="sc-fznxsB eaghqC"]/a/img')
-print(len(img))
+logo_images = []
 
-src = [i.get_attribute('src') for i in img]
-print(len(src))
-print(src)
+elements = driver.find_elements(by=By.XPATH, value='//div[@class="sc-fznxsB eaghqC"]')
+print(len(elements))
 
-src_links = []
-for i in range(len(src)):
-    data = {'src': src[i], 'id': str(uuid.uuid4())[i]}
-    src_links.append(data)
-    df_data = pd.DataFrame(src_links, index=[i])
-    df_data.to_json('Src_links.json', index=True)
-
-image_path = os.getcwd()
-image_path = os.path.join(image_path, 'images')
-if not os.path.exists(image_path):
-    os.mkdir(image_path)
-    print(image_path)
-
-count = 0
-for i in enumerate(image_path):
-    try:
-        if src != None:
-            src = str(src)
-            print(src)
-            
-            urllib.request.urlretrieve(src, os.path.join(image_path, str(count) + '.gif'))
+if not NoneType in elements:
+    for i in elements:
+        image = i.get_attribute('src')
+        logo_images.append(image)
+    for img in logo_images:
+        file_name = img.split('/')[-1]
+        # print(file_name)
+        r = requests.get(img, stream=True)
+        if r.status_code == 200:
+            with open(file_name, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
         else:
-            raise TypeError
-    except Exception as e:
-        print(f'The error is {e}')
+            print('Error: ', r.status_code)
+
+
+
+    
+# print(len(new_links))
+# print(new_links)
+
+# new_links = []
+
+# for link in src_links:
+#     split_link = link.split('//')
+#     split_link[0] = 'http://' 
+#     new_link = split_link[0] + split_link[1]    
+#     new_links.append(new_link)
+    
+# print(new_links)
+# print(len(new_links))
+
+
+# image_path = os.getcwd()
+# image_path = os.path.join(image_path, 'images')
+# if not os.path.exists(image_path):
+#     os.mkdir(image_path)
+#     print(image_path)
+    
+
+
+# try: 
+#     count = 0
+#     for i in enumerate(image_path):
+#             if new_links != None:
+#                 new_links = str(new_links)
+#                 print(new_links)
+                
+#                 urllib.request.urlopen(new_links, context=ssl.create_default_context(cafile=certifi.where()))
+#                 # urllib.request.urlretrieve(new_links, os.path.join(image_path, str(count) + '.jpg'))
+#             else:
+#                 raise TypeError
+# except Exception as e:
+#     print(f'The error is {e}')
 
 
 driver.close()

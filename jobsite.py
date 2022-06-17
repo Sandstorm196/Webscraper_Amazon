@@ -1,8 +1,12 @@
+import ssl
+import wget
 import requests
 from selenium import webdriver
 import uuid
 import os
-import wget 
+import urllib
+import certifi
+from openpyxl.workbook import Workbook
 import time
 import Constants
 import pandas as pd
@@ -41,6 +45,7 @@ class Jobsite():
         opt.add_argument("--test-type")
         self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=opt)
         self.driver.get(Constants.URL)
+        self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
                 
     def _search(self):
@@ -77,9 +82,7 @@ class Jobsite():
 
         search = self.driver.find_element(by=By.XPATH, value=Constants.SEARCH_XPATH)
         search.click()
-        time.sleep(2)
-        
-   
+        time.sleep(5)
 
     def create_images_folder(self):
         '''
@@ -87,26 +90,42 @@ class Jobsite():
         '''
         
         print("Create the images folder and download...")  
-        
-        images = []
 
         img = self.driver.find_elements(by=By.XPATH, value=Constants.IMAGE_XPATH)
-        img = [i.get_attribute('src') for i in img]
         print(len(img))
-        images.append(img)
-        print(len(images))
+        
+        src = [i.get_attribute('src') for i in img]
+        print(len(src))
+        print(type(src))
+        print(src)
         
         image_path = os.getcwd()
-        image_path = os.path.join(image_path, 'images')
-        os.mkdir(image_path)
-        print(image_path)
-
-        counter = 0
-        for i in images:
-            save_as = os.path.join(image_path, 'image' + str(counter) + '.png')
-            wget.download(i, save_as)     
-            counter += 1     
-    
+        image_path = os.path.join(image_path, 'logo_images')
+        if not os.path.exists(image_path):
+            os.mkdir(image_path)
+            print(image_path)
+            
+        count = 0
+        for s in src:
+                    print(type(s))
+                    save_as = os.path.join(image_path, 'image' + str(count) + '.jpg')
+                    wget.download(s, save_as)     
+                    count += 1    
+                    # urllib.request.urlretrieve(s, os.path.join(image_path, 'image' + str(count) + '.jpg'))
+                    # count += 1
+        # count = 0   
+        # for s in src:        
+        #     try:
+        #         if s != None:
+        #             # s = str(s)
+        #             print(s)
+        #             urllib.request.urlretrieve(s, os.path.join(image_path, 'image'+ str(count) + '.jpg'))
+        #             count += 1     
+        #         else:
+        #             raise TypeError
+        #     except Exception as e:
+        #         print(f'The error is {e}')
+            
     def scrape_data(self):
         '''
         It scrapes the data from the job posting.
@@ -120,7 +139,6 @@ class Jobsite():
 
         for k in range(1):
             titles = self.driver.find_elements(by=By.XPATH, value=Constants.TITLE_XPATH)
-            # uuidFour = str(uuid.uuid4())
             location = self.driver.find_elements(by=By.XPATH, value=Constants.LOCATION_XPATH)
             salary = self.driver.find_elements(by=By.XPATH, value=Constants.SALARY_XPATH)
             company = self.driver.find_elements(by=By.XPATH, value=Constants.COMPANY_XPATH)
@@ -128,26 +146,24 @@ class Jobsite():
             description = self.driver.find_elements(by=By.XPATH, value=Constants.DESCRIPTION_XPATH)
             job_ref = self.driver.find_elements(by=By.XPATH, value=Constants.JOB_REF_XPATH)
             
-            # if not self.NoneType in [titles, location, salary, company, posted, description, image_link, job_ref]:
-            for i in range(len(titles)):
-                    data = {'Job_title': titles[i].text,'Location': location[i].text, 
-                            'Salary': salary[i].text, 'Company': company[i].text, 
-                            'Post_Date': posted[i].text, 'Description': description[i].text, 
-                            'Job_Reference': job_ref[i].get_attribute('href'), 'id': str(uuid.uuid4())[i]}
-                    job_results.append(data)
-                
-            # next=driver.find_element_by_xpath('//a[@title="Next"]')
+            if not self.NoneType in [titles, location, salary, company, posted, description, job_ref]:
+                for i in range(len(titles)):
+                        data = {'Job_title': titles[i].text,'Location': location[i].text, 
+                                'Salary': salary[i].text, 'Company': company[i].text, 
+                                'Post_Date': posted[i].text, 'Description': description[i].text, 
+                                'Job_Reference': job_ref[i].get_attribute('href')}
+                        job_results.append(data)
+            # next=driver.find_element_by_xpath(Constants.NEXT_XPATH)
             # next.click()
             
-                    df_data = pd.DataFrame(job_results, columns=['Job_title', 'Location', 
-                                                                        'Salary', 'Company', 
-                                                                        'Post_Date', 'Description', 
-                                                                        'Job_Reference', 'id'])
-                    print(df_data)
-                    
-                    df_data.to_excel('Data_Scientist_London.xlsx', index=False)
-                    df_data.to_json('Data_Scientist_London.json', orient='records')
-                        
+                        df_data = pd.DataFrame(job_results, columns=['Job_title', 'Location', 
+                                                                            'Salary', 'Company', 
+                                                                            'Post_Date', 'Description', 
+                                                                            'Job_Reference'])
+                        df_data.to_excel('Data_Scientist_London.xlsx', index=False)
+                        df_data.to_json('Data_Scientist_London.json', orient='records')
+            print(df_data)
+                            
 if __name__ == '__main__':
     '''
     Scrape the job advert data from Jobsite website.
@@ -156,9 +172,9 @@ if __name__ == '__main__':
     jobsite = Jobsite()
     jobsite._search()
     jobsite.create_images_folder()
-    jobsite.scrape_data()
+    # jobsite.scrape_data()
     
     print("Done!")
     
-# jobsite.driver.quit()
-# jobsite.driver.close()
+jobsite.driver.quit()
+jobsite.driver.close()

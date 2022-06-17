@@ -1,6 +1,4 @@
-# Necessary web-scaraper packages
 import uuid
-from jmespath import search
 from openpyxl import Workbook
 import requests
 from selenium import webdriver
@@ -14,12 +12,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver.chrome.options import Options
 import time
-from bs4 import BeautifulSoup
 import pandas as pd
 from pathlib import Path
-import os
-import csv
-import json
 from webdriver_manager.chrome import ChromeDriverManager
 
 class amazon:
@@ -75,12 +69,15 @@ class amazon:
         self.driver.get(f'self.current_url')
         print(f'The current URL is : {self.driver.current_url}' )
         time.sleep(2) # The page is loading slowly
+        
+        
         results_list = self.driver.find_elements_by_class_name('s-result-list')
         self.links = []
         
         try:
             results = results_list[0].find_elements_by_xpath('//*[@id="search"]/div[1]/div[1]/div/span[3]/div[2]/div[3]/div/div/div/div/div/div/div/div[2]/div/div/div[1]/h2/a/span')
             self.links = [link.get_attribute('href') for link in results]
+            print(f"Found {len(self.links)} links...")
             return self.links
         except Exception as e:
             print("Couldn't find the product...")
