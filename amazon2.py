@@ -76,7 +76,8 @@ class Amazon:
                 count += 1
             except Exception as e:
                 print(e)
-                
+        amz.scrape_data()
+        
     def scrape_data(self):
         '''
         It scrapes the data from the website:
@@ -86,33 +87,38 @@ class Amazon:
         
         iphone_results = []
 
-        for i in range(2):
-    
+        for i in range(5):
+            time.sleep(10)
+                        
             sku = self.driver.find_elements(by=By.XPATH, value="//span[contains(@class,'a-size-medium a-color-base a-text-normal')]")
             asin = self.driver.find_elements(by=By.XPATH, value="//div[contains(@class, 's-result-item s-asin')]")
             reviews = self.driver.find_elements(by=By.XPATH, value="//div[@class='a-row a-size-small']/span[2]")
             image_link = self.driver.find_elements(by=By.XPATH, value="//img[@class='s-image']")
             product_link = self.driver.find_elements(by=By.XPATH, value="//a[@class='a-link-normal s-no-outline']")
             prices = self.driver.find_elements(by=By.XPATH, value="//span[contains(@class,'price-whole')]")
-
+            
             price = [p.text for p in prices]
             
-            if not None in [sku, asin, reviews, image_link, product_link]:
-                for i in range(len(sku)):                    
-                    uuidFour = str(uuid.uuid4())        
-                    data = {'uuid': uuidFour,
-                            'sku': sku[i].text, 
-                            'asin': asin[i].get_attribute('data-asin'), 
-                            'price': price[i],
-                            'reviews': reviews[i].text, 
-                            'image_link': image_link[i].get_attribute('src'), 
-                            'product_link': product_link[i].get_attribute('href')}
+            if not None in [sku, asin, price, reviews, image_link, product_link]:
+                try:
+                    for i in range(len(sku)):    
+                                        
+                        uuidFour = str(uuid.uuid4()) 
+                               
+                        data = {'uuid': uuidFour,
+                                'sku': sku[i].text, 
+                                'asin': asin[i].get_attribute('data-asin'), 
+                                'price': price[i],
+                                'reviews': reviews[i].text, 
+                                'image_link': image_link[i].get_attribute('src'), 
+                                'product_link': product_link[i].get_attribute('href')}
 
-                    iphone_results.append(data)
-            
-                    next = self.driver.find_element_by_xpath('')
+                        iphone_results.append(data)
+                        
+                    next = self.driver.find_element(By.XPATH, "//a[@class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
                     next.click()
-                
+                    time.sleep(10)              
+                    
                     df_data = pd.DataFrame(iphone_results, columns=['uuid',
                                                                     'sku', 
                                                                     'asin', 
@@ -123,6 +129,12 @@ class Amazon:
                             
                     df_data.to_excel('Iphone_Results.xlsx', index=False)
                     df_data.to_json('Iphone_Results.json', orient='records')
+                    
+                    amz._download_images()
+                    
+                except Exception as e:
+                    print(e)
+                    continue
             
             print(df_data)
                 
@@ -133,7 +145,7 @@ if __name__ == "__main__":
     amz = Amazon()
     amz._accept_cookies()  
     amz._search()
-    # amz._download_images()   
+    amz._download_images()
     amz.scrape_data()
 
     amz.driver.close()
