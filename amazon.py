@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 import uuid
-from openpyxl import Workbook
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import NoSuchElementException
 import os
 import urllib
 import pandas as pd
@@ -45,10 +45,13 @@ class Amazon(Data):
         print("Accepting cookies...")
         
         time.sleep(2)
-        accept_button = self.driver.find_element(By.XPATH, Config.XPATH_COOKIES)
-        accept_button.click()
-        self.driver.implicitly_wait(10)
-        
+        try: 
+            accept_button = self.driver.find_element(By.XPATH, Config.XPATH_COOKIES)
+            accept_button.click()
+            time.sleep(2)
+        except  NoSuchElementException as e:
+            print("TimeoutException, cookies button has not been clicked:", e)
+            
 
     def search(self):        
         '''Searching for the product in the Amazon website.'''
@@ -77,20 +80,22 @@ class Amazon(Data):
             
         
     def _download_images(self):
-        '''Downloads images from the Amazon website.'''
+        '''Downloads images from the Amazon website with the given number of the page.'''
         print("Downloading images...")
 
-        page = 1
         count = 1
+        time.sleep(7)
         
         try:
-            img_element = self.driver.find_element(by=By.XPATH, value=Config.XPATH_IMAGES).get_attribute('src')
+            img_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_IMAGES)
             print(len(img_element))
 
-            for i in img_element: 
-                urllib.request.urlretrieve(i, os.path.join(self.image_path, f'page_{page}' + '_image_' + str(count) + '.jpg'))
+            src = [i.get_attribute('src') for i in img_element]
+            print(len(src))
+            
+            for i in src: 
+                urllib.request.urlretrieve(i, os.path.join(self.image_path, f'page_{self.page + 1}' + '_image_' + str(count) + '.jpg'))
                 count += 1
-                page += 1
                 
         except Exception as e:
             print('Could not get the image:', e)
@@ -234,18 +239,18 @@ class Amazon(Data):
         
         self._create_images_folder()
         
-        for page in range(self.num_page):
+        for self.page in range(self.num_page):
             
-            print(f'Page: {page + 1}')
+            print(f'Page: {self.page + 1}')
 
             self._download_images()
-            self._get_price()
-            self._get_sku()
-            self._get_asin()
-            self._get_reviews()
-            self._get_image_link()
-            self._get_product_link()
-            self._save_data()
+            # self._get_price()
+            # self._get_sku()
+            # self._get_asin()
+            # self._get_reviews()
+            # self._get_image_link()
+            # self._get_product_link()
+            # self._save_data()
         
             time.sleep(3)
             next = self.driver.find_element(by=By.XPATH, value=Config.XPATH_NEXT_PAGE)
