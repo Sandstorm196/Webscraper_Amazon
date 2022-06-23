@@ -1,20 +1,13 @@
-import ssl
 import wget
-import requests
 from selenium import webdriver
 import uuid
 import os
-import urllib
-import certifi
-from openpyxl.workbook import Workbook
 import time
 import Constants
 import pandas as pd
 from selenium.webdriver.support.select import Select
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 
 
 class Jobsite():
@@ -96,19 +89,18 @@ class Jobsite():
         
         src = [i.get_attribute('src') for i in img]
         print(len(src))
-        print(type(src))
-        print(src)
         
         image_path = os.getcwd()
         image_path = os.path.join(image_path, 'logo_images')
+        
         if not os.path.exists(image_path):
             os.mkdir(image_path)
             print(image_path)
             
         count = 0
+        
         for s in src:
-                    print(type(s))
-                    save_as = os.path.join(image_path, 'image' + str(count) + '.jpg')
+                    save_as = os.path.join(image_path, 'image_' + str(count) + '.gif')
                     wget.download(s, save_as)     
                     count += 1    
                     # urllib.request.urlretrieve(s, os.path.join(image_path, 'image' + str(count) + '.jpg'))
@@ -138,6 +130,7 @@ class Jobsite():
         job_results = []
 
         for k in range(1):
+
             titles = self.driver.find_elements(by=By.XPATH, value=Constants.TITLE_XPATH)
             location = self.driver.find_elements(by=By.XPATH, value=Constants.LOCATION_XPATH)
             salary = self.driver.find_elements(by=By.XPATH, value=Constants.SALARY_XPATH)
@@ -147,21 +140,37 @@ class Jobsite():
             job_ref = self.driver.find_elements(by=By.XPATH, value=Constants.JOB_REF_XPATH)
             
             if not self.NoneType in [titles, location, salary, company, posted, description, job_ref]:
+                
                 for i in range(len(titles)):
-                        data = {'Job_title': titles[i].text,'Location': location[i].text, 
-                                'Salary': salary[i].text, 'Company': company[i].text, 
-                                'Post_Date': posted[i].text, 'Description': description[i].text, 
-                                'Job_Reference': job_ref[i].get_attribute('href')}
+                    
+                        uuidFour = str(uuid.uuid4()) 
+                    
+                        data = {'uuid': uuidFour,
+                                'job_title': titles[i].text,
+                                'location': location[i].text, 
+                                'salary': salary[i].text, 
+                                'company': company[i].text, 
+                                'post_date': posted[i].text, 
+                                'description': description[i].text, 
+                                'job_reference': job_ref[i].get_attribute('href')}
+                        
                         job_results.append(data)
+                        
             # next=driver.find_element_by_xpath(Constants.NEXT_XPATH)
             # next.click()
             
-                        df_data = pd.DataFrame(job_results, columns=['Job_title', 'Location', 
-                                                                            'Salary', 'Company', 
-                                                                            'Post_Date', 'Description', 
-                                                                            'Job_Reference'])
+                        df_data = pd.DataFrame(job_results, columns=['uuid',
+                                                                     'job_title', 
+                                                                     'location', 
+                                                                     'salary', 
+                                                                     'company', 
+                                                                     'post_date', 
+                                                                     'description', 
+                                                                     'job_reference'])
+                        
                         df_data.to_excel('Data_Scientist_London.xlsx', index=False)
                         df_data.to_json('Data_Scientist_London.json', orient='records')
+                        
             print(df_data)
                             
 if __name__ == '__main__':
@@ -172,9 +181,8 @@ if __name__ == '__main__':
     jobsite = Jobsite()
     jobsite._search()
     jobsite.create_images_folder()
-    # jobsite.scrape_data()
+    jobsite.scrape_data()
     
     print("Done!")
     
 jobsite.driver.quit()
-jobsite.driver.close()

@@ -1,5 +1,5 @@
 import unittest
-from Amazon2 import scrape_data
+import Amazon
 import sys
 import os
 
