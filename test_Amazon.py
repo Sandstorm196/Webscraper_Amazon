@@ -1,27 +1,48 @@
 import unittest
+from unittest.case import _AssertRaisesContext
 import Amazon
 import sys
 import os
+from selenium.common.exceptions import ElementNotInteractableException
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-class ProductTestCase(unittest.TestCase):
+class TestDemo(unittest.TestCase):
     
-    '''Initialize the scenario for the test'''
+    '''
+    Initialize the scenario for the public methods:
+    - accept_cookies()
+    - search()
+    - click_on_brand()
+    '''
+    
+    def test_accept_cookies():
+        '''Test the accept_cookies button whether it is clicked on.'''
         
-    def test_scrape_data(self):
-        '''Test the scrape data method.'''
+        Amazon.accept_cookies("//input[@type='submit' and @id='sp-cc-accept']")
+        with _AssertRaisesContext(ElementNotInteractableException):
+            Amazon.accept_cookies("//input[@type='submit' and @id='sp-cc-accept']")
         
-        self.assertAlmostEqual(len(self.webscaraper.scrape_data()), 25)
+    # def test_search(self):
+    #     '''Test the search term is on the website.'''
+        
+    #     expected_term = ['iPhone 13']
+    #     actual_term = self.search("//input[@id='twotabsearchtextbox']")
+    #     self.assertEqual(expected_term, actual_term)
+        
+    # def test_click_on_brand(self):
+        
+    #     pass
+        
         
     def tearDown(self):
         
-        '''Closes and terminates the driver...'''
-        print("Closing the driver...")
+        '''This is used to remove any of the variable set up from memory.'''
+        del self.Amazon
+    
         
-        self.webscaraper.driver.close()
-        self.webscaraper.driver.quit()
-        
+    
+    
 if __name__ == '__main__':
     '''Main method'''
     
