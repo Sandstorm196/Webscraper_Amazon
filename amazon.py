@@ -31,6 +31,7 @@ class Data:
     reviews_list = []
     image_link_list = []
     product_link_list = []
+    uuidFour = []
 
 
 class Amazon(Data):
@@ -99,6 +100,15 @@ class Amazon(Data):
                 
         except Exception as e:
             print('Could not get the image:', e)
+            
+    
+    @staticmethod
+    def _generate_uuid():
+        '''Generate a unique identifier.'''
+        print('Generating a unique identifier...')
+        
+        uuidFour = str(uuid.uuid4())
+        return uuidFour
                         
     
     def _get_price(self):
@@ -218,14 +228,16 @@ class Amazon(Data):
                          self.asin_list, 
                          self.reviews_list, 
                          self.product_link_list, 
-                         self.image_link_list)       
+                         self.image_link_list,
+                         self.uuidFour)       
         
         df_data = pd.DataFrame(final_list, columns=['price',
                                                     'sku', 
                                                     'asin', 
                                                     'reviews', 
                                                     'product_link', 
-                                                    'image_link'])
+                                                    'image_link',
+                                                    'uuidFour'])
                         
         df_data.to_excel('iPhone_13_Data.xlsx', index=False)
         df_data.to_json('iPhone_13_Data.json', orient='records')
@@ -244,13 +256,14 @@ class Amazon(Data):
             print(f'Page: {self.page + 1}')
 
             self._download_images()
-            # self._get_price()
-            # self._get_sku()
-            # self._get_asin()
-            # self._get_reviews()
-            # self._get_image_link()
-            # self._get_product_link()
-            # self._save_data()
+            self._generate_uuid()
+            self._get_price()
+            self._get_sku()
+            self._get_asin()
+            self._get_reviews()
+            self._get_image_link()
+            self._get_product_link()
+            self._save_data()
         
             time.sleep(3)
             next = self.driver.find_element(by=By.XPATH, value=Config.XPATH_NEXT_PAGE)
