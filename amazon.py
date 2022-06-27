@@ -15,16 +15,7 @@ import time
 @dataclass
 class Data:
     
-    opt = webdriver.ChromeOptions()
-    opt.headless = False
-    opt.add_argument("--disable-notifications")
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
-    driver.get(Config.URL)
-    driver.set_page_load_timeout(10)
-    driver.implicitly_wait(10)
-    
     num_page = 5
-    
     price_list = []
     sku_list = []
     asin_list = []
@@ -33,12 +24,19 @@ class Data:
     product_link_list = []
     uuidFour = []
 
-
 class Amazon(Data):
     
     def __init__(self):
         '''Initializing webscaraper...'''
         print("Initializing webscraper...")
+        
+        opt = webdriver.ChromeOptions()
+        opt.headless = False
+        opt.add_argument("--disable-notifications")
+        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
+        self.driver.get(Config.URL)
+        self.driver.set_page_load_timeout(10)
+        self.driver.implicitly_wait(10)
         
                 
     def accept_cookies(self):   
@@ -237,7 +235,7 @@ class Amazon(Data):
                                                     'reviews', 
                                                     'product_link', 
                                                     'image_link',
-                                                    'uuidFour'])
+                                                    'uuid'])
                         
         df_data.to_excel('iPhone_13_Data.xlsx', index=False)
         df_data.to_json('iPhone_13_Data.json', orient='records')
@@ -255,7 +253,7 @@ class Amazon(Data):
             
             print(f'Page: {self.page + 1}')
 
-            self._download_images()
+            # self._download_images()
             self._generate_uuid()
             self._get_price()
             self._get_sku()
@@ -263,6 +261,7 @@ class Amazon(Data):
             self._get_reviews()
             self._get_image_link()
             self._get_product_link()
+            self._generate_uuid()
             self._save_data()
         
             time.sleep(3)
