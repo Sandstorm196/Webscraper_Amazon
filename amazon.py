@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from dataclasses_json import dataclass_json
 import uuid
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
@@ -12,32 +13,32 @@ import pandas as pd
 import Config
 import time
 
-@dataclass
-class Data:
-    
-    num_page = 5
-    price_list = []
-    sku_list = []
-    asin_list = []
-    reviews_list = []
-    image_link_list = []
-    product_link_list = []
-    uuidFour = []
+@dataclass_json
+@dataclass()
+class Data:    
+    price_list : list = field(default_factory=list) 
+    sku_list : list = field(default_factory=list) 
+    asin_list : list = field(default_factory=list) 
+    reviews_list : list = field(default_factory=list) 
+    image_link_list : list = field(default_factory=list) 
+    product_link_list : list = field(default_factory=list) 
+    uuidFour : list = field(default_factory=list) 
 
-class Amazon(Data):
+class Amazon:
     
     def __init__(self):
         '''Initializing webscaraper...'''
         print("Initializing webscraper...")
         
         opt = webdriver.ChromeOptions()
-        opt.headless = False
+        opt.headless = True
         opt.add_argument("--disable-notifications")
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
         self.driver.get(Config.URL)
         self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
-        
+        self.num_page = 1
+        self.product_data_container = Data()
                 
     def accept_cookies(self):   
         '''Accepts cookies...'''     
@@ -114,19 +115,19 @@ class Amazon(Data):
         print('Get the price of a product from the website')
             
         price_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_PRICES)
+        
         print(len(price_element))
         
         for price in price_element:  
-            print(len(price.text))  
-            
-            if price.text == None:
-                price.text == 'Empty'
-                self.price_list.append(price.text)
+            print(len(price.text))
+                        
+            if len(price.text) < 1: 
+                price.text = 'Empty'
+                self.product_data_container.price_list.append(price.text)
             else:
-                self.price_list.append(price.text)
-            print(self.price_list) 
-                
+                self.product_data_container.price_list.append(price.text)
 
+        
     def _get_sku(self):
         '''It gets the sku from the website.'''
         print('Get the sku from the website...')
@@ -135,15 +136,13 @@ class Amazon(Data):
         print(len(sku_element))
         
         for sku in sku_element:  
-            print(len(sku.text))  
             
             if sku.text == None:
-                sku.text == 'Empty'
-                self.sku_list.append(sku.text)
+                sku.text = 'Empty'
+                self.product_data_container.sku_list.append(sku.text)
             else:
-                self.sku_list.append(sku.text)
-            print(self.sku_list)
-            
+                self.product_data_container.sku_list.append(sku.text)
+                
         
     def _get_asin(self):
         '''It gets the asin of the product from the website.'''
@@ -153,16 +152,14 @@ class Amazon(Data):
         print(len(asin_element))
         
         for asin in asin_element:  
-            print(len(asin.get_attribute('data-asin')))  
-            
+                
             if asin.text == None:
-                asin.text == 'Empty'
-                self.asin_list.append(asin.get_attribute('data-asin'))
+                asin.text = 'Empty'
+                self.product_data_container.asin_list.append(asin.get_attribute('data-asin'))
             else:
-                self.asin_list.append(asin.get_attribute('data-asin'))
-            print(self.asin_list)
-         
-    
+                self.product_data_container.asin_list.append(asin.get_attribute('data-asin'))
+            
+        
     def _get_reviews(self):
         '''It gets the number of reviews.'''
         print('Get the number of reviews...')
@@ -171,14 +168,12 @@ class Amazon(Data):
         print(len(reviews_element))
         
         for reviews in reviews_element:  
-            print(len(reviews.text))  
             
             if reviews == None:
-                reviews == 'Empty'
-                self.reviews_list.append(reviews)
+                reviews = 'Empty'
+                self.product_data_container.reviews_list.append(reviews)
             else:
-                self.reviews_list.append(reviews.text)
-            print(self.reviews_list)
+                self.product_data_container.reviews_list.append(reviews.text)
             
 
     def _get_image_link(self):
@@ -189,14 +184,12 @@ class Amazon(Data):
         print(len(image_link_element))
         
         for image_link in image_link_element:  
-            print(len(image_link.get_attribute('src')))  
             
             if image_link.text == None:
-                image_link.text == 'Empty'
-                self.image_link_list.append(image_link.get_attribute('src'))
+                image_link.text = 'Empty'
+                self.product_data_container.image_link_list.append(image_link.get_attribute('src'))
             else:
-                self.image_link_list.append(image_link.get_attribute('src'))
-            print(self.image_link_list)
+                self.product_data_container.image_link_list.append(image_link.get_attribute('src'))
      
      
     def _get_product_link(self):
@@ -207,54 +200,44 @@ class Amazon(Data):
         print(len(product_link_element))
         
         for product_link in product_link_element:  
-            print(len(product_link.get_attribute('href')))  
             
             if product_link.text == None:
-                product_link.text == 'Empty'
-                self.product_link_list.append(product_link.get_attribute('href'))
+                product_link.text = 'Empty'
+                self.product_data_container.product_link_list.append(product_link.get_attribute('href'))
             else:
-                self.product_link_list.append(product_link.get_attribute('href'))
-            print(self.product_link_list)
+                self.product_data_container.product_link_list.append(product_link.get_attribute('href'))
             
                 
     def _save_data(self):
-        '''It saves the data.'''
-        print("It is saving the data in the json and excel file.")
-                                
-        final_list = zip(self.price_list, 
-                         self.sku_list, 
-                         self.asin_list, 
-                         self.reviews_list, 
-                         self.product_link_list, 
-                         self.image_link_list,
-                         self.uuidFour)       
+        '''It saves the data preferably json or excel file.'''
+        print("It is saving the data.")
         
-        df_data = pd.DataFrame(final_list, columns=['price',
-                                                    'sku', 
-                                                    'asin', 
-                                                    'reviews', 
-                                                    'product_link', 
-                                                    'image_link',
-                                                    'uuid'])
-                        
-        df_data.to_excel('iPhone_13_Data.xlsx', index=False)
-        df_data.to_json('iPhone_13_Data.json', orient='records')
-                        
-        print(df_data)                 
+        # print(self.product_data_container.to_json())
         
+        product_data_info = {'price': self.product_data_container.price_list,
+                             'sku': self.product_data_container.sku_list,
+                             'asin': self.product_data_container.asin_list, 
+                             'reviews': self.product_data_container.reviews_list, 
+                             'product_link': self.product_data_container.product_link_list, 
+                             'image_link': self.product_data_container.image_link_list,
+                             'uuid': self.product_data_container.uuidFour
+                             }
+        
+        df = pd.DataFrame.from_dict(product_data_info, orient='index')
+        df = df.transpose()
+        df.to_excel('iPhone13.xlsx', index=False, header=True, encoding='utf-8')
         
     def scrape_data(self):
         '''It scrapes all the data...'''
         print('Scraping all the data...')
         
-        self._create_images_folder()
+        # self._create_images_folder()
         
         for self.page in range(self.num_page):
             
             print(f'Page: {self.page + 1}')
 
             # self._download_images()
-            self._generate_uuid()
             self._get_price()
             self._get_sku()
             self._get_asin()
