@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from unittest import result
 from dataclasses_json import dataclass_json
 import uuid
 from selenium import webdriver
@@ -6,7 +7,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as EC
 import os
 import urllib
 import pandas as pd
@@ -101,41 +105,42 @@ class Amazon:
             print('Could not get the image:', e)
             
     
-    @staticmethod
-    def _generate_uuid():
+    def _generate_uuid(self):
         '''Generate a unique identifier.'''
         print('Generating a unique identifier...')
         
-        uuidFour = str(uuid.uuid4())
-        return uuidFour
-                        
-    
+        for u in range(len(self.sku_element)):
+            uuid_Four = str(uuid.uuid4())
+            self.product_data_container.uuidFour.append(uuid_Four)
+ 
+        
     def _get_price(self):
         '''It gets the price of a product from the website.'''
         print('Get the price of a product from the website')
-            
-        price_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_PRICES)
         
+        price_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_PRICES)
         print(len(price_element))
         
         for price in price_element:  
-            print(len(price.text))
-                        
-            if len(price.text) < 1: 
-                price.text = 'Empty'
-                self.product_data_container.price_list.append(price.text)
+            
+            if price == None:
+                price = 'Empty'
+                self.product_data_container.price_list.append(price)
             else:
                 self.product_data_container.price_list.append(price.text)
-
+        print(self.product_data_container.price_list)
+       
+    # def get_products(self):
+    #     return self.driver.find_elements(by=By.CSS_SELECTOR, value=".s-main-slot .s-result-item")
         
     def _get_sku(self):
         '''It gets the sku from the website.'''
         print('Get the sku from the website...')
             
-        sku_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_SKU)
-        print(len(sku_element))
+        self.sku_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_SKU)
+        print(len(self.sku_element))
         
-        for sku in sku_element:  
+        for sku in self.sku_element:  
             
             if sku.text == None:
                 sku.text = 'Empty'
@@ -153,9 +158,9 @@ class Amazon:
         
         for asin in asin_element:  
                 
-            if asin.text == None:
-                asin.text = 'Empty'
-                self.product_data_container.asin_list.append(asin.get_attribute('data-asin'))
+            if asin.get_attribute('data-asin') == None:
+                asin = 'Empty'
+                self.product_data_container.asin_list.append(asin)
             else:
                 self.product_data_container.asin_list.append(asin.get_attribute('data-asin'))
             
@@ -185,9 +190,9 @@ class Amazon:
         
         for image_link in image_link_element:  
             
-            if image_link.text == None:
-                image_link.text = 'Empty'
-                self.product_data_container.image_link_list.append(image_link.get_attribute('src'))
+            if image_link.get_attribute('src') == None:
+                image_link = 'Empty'
+                self.product_data_container.image_link_list.append(image_link)
             else:
                 self.product_data_container.image_link_list.append(image_link.get_attribute('src'))
      
@@ -201,9 +206,9 @@ class Amazon:
         
         for product_link in product_link_element:  
             
-            if product_link.text == None:
-                product_link.text = 'Empty'
-                self.product_data_container.product_link_list.append(product_link.get_attribute('href'))
+            if product_link.get_attribute('href') == None:
+                product_link = 'Empty'
+                self.product_data_container.product_link_list.append(product_link)
             else:
                 self.product_data_container.product_link_list.append(product_link.get_attribute('href'))
             
@@ -236,7 +241,11 @@ class Amazon:
         for self.page in range(self.num_page):
             
             print(f'Page: {self.page + 1}')
-
+            
+            # product_list = self.get_products()
+            
+            # for product in product_list:
+                
             # self._download_images()
             self._get_price()
             self._get_sku()
@@ -245,11 +254,11 @@ class Amazon:
             self._get_image_link()
             self._get_product_link()
             self._generate_uuid()
-            self._save_data()
-        
-            time.sleep(3)
-            next = self.driver.find_element(by=By.XPATH, value=Config.XPATH_NEXT_PAGE)
-            next.click()
+        self._save_data()
+            
+        time.sleep(3)
+        next = self.driver.find_element(by=By.XPATH, value=Config.XPATH_NEXT_PAGE)
+        next.click()
                 
                 
 if __name__ == "__main__":  
