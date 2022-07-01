@@ -121,29 +121,24 @@ class Amazon:
     def _get_product_list(self):
         print('Get product list')
         
-        container = self.driver.find_element(By.XPATH, value="//div[contains(@class,'s-main-slot s-result-list s-search-results sg-row')]")
+        container = self.driver.find_element(By.CSS_SELECTOR, 'div.s-main-slot') 
         search_results = container.find_elements(By.TAG_NAME, 'div')
-        print(len(search_results))
-        self.product_data_container.products_list = search_results[2:-2]
-        print(len(self.product_data_container.products_list))
-
-        return self.product_data_container.products_list
+        products_list = search_results[2:-2]
+        return products_list
   
-    def _get_price(self):
+    def _get_price(self, products_list):
         print('Get price from the results')
                 
-        for product in self.product_data_container.products_list:
+        for product in products_list:
             try:
-                price = product.find_element(By.CLASS_NAME, value="price-whole")
+                price = product.find_element(By.XPATH, Config.XPATH_PRICES)
                 self.product_data_container.price_list.append(price.text)
             except Exception as e:
                 print(e)
                 self.product_data_container.price_list.append('no price')
-        print(len(self.product_data_container.price_list))
-        
-       
-    # def get_products(self):
-    #     return self.driver.find_elements(by=By.CSS_SELECTOR, value=".s-main-slot .s-result-item")
+        print(self.product_data_container.price_list)
+    
+
         
     def _get_sku(self):
         '''It gets the sku from the website.'''
@@ -257,10 +252,12 @@ class Amazon:
             # product_list = self.get_products()
             
             # for product in product_list:
-                
+            
+            product_list = self._get_product_list()
+            
             # self._download_images()
-            self._get_product_list()
-            self._get_price()
+            # self._get_product_list()
+            self._get_price(product_list)
             # self._get_sku()
             # self._get_asin()
             # self._get_reviews()
