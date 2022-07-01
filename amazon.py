@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from unittest import result
 from dataclasses_json import dataclass_json
 import uuid
+from numpy import product
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
@@ -27,6 +28,7 @@ class Data:
     image_link_list : list = field(default_factory=list) 
     product_link_list : list = field(default_factory=list) 
     uuidFour : list = field(default_factory=list) 
+    products_list : list = field(default_factory=list) 
 
 class Amazon:
     
@@ -64,9 +66,11 @@ class Amazon:
         search_input = self.driver.find_element(By.XPATH, Config.XPATH_SEARCH_BOX)
         search_input.send_keys(Config.SEARCH_TERM)
         search_input.send_keys(Keys.RETURN)
-        
+        time.sleep(2)
+
 
     def click_on_brand(self):
+        time.sleep(2)
         accept_button = self.driver.find_element(By.XPATH, Config.XPATH_APPLE_BRAND)
         accept_button.click()
         
@@ -113,22 +117,30 @@ class Amazon:
             uuid_Four = str(uuid.uuid4())
             self.product_data_container.uuidFour.append(uuid_Four)
  
+    
+    def _get_product_list(self):
+        print('Get product list')
         
+        container = self.driver.find_element(By.XPATH, value="//div[contains(@class,'s-main-slot s-result-list s-search-results sg-row')]")
+        search_results = container.find_elements(By.TAG_NAME, 'div')
+        print(len(search_results))
+        self.product_data_container.products_list = search_results[2:-2]
+        print(len(self.product_data_container.products_list))
+
+        return self.product_data_container.products_list
+  
     def _get_price(self):
-        '''It gets the price of a product from the website.'''
-        print('Get the price of a product from the website')
-        
-        price_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_PRICES)
-        print(len(price_element))
-        
-        for price in price_element:  
-            
-            if price == None:
-                price = 'Empty'
-                self.product_data_container.price_list.append(price)
-            else:
+        print('Get price from the results')
+                
+        for product in self.product_data_container.products_list:
+            try:
+                price = product.find_element(By.CLASS_NAME, value="price-whole")
                 self.product_data_container.price_list.append(price.text)
-        print(self.product_data_container.price_list)
+            except Exception as e:
+                print(e)
+                self.product_data_container.price_list.append('no price')
+        print(len(self.product_data_container.price_list))
+        
        
     # def get_products(self):
     #     return self.driver.find_elements(by=By.CSS_SELECTOR, value=".s-main-slot .s-result-item")
@@ -247,14 +259,15 @@ class Amazon:
             # for product in product_list:
                 
             # self._download_images()
+            self._get_product_list()
             self._get_price()
-            self._get_sku()
-            self._get_asin()
-            self._get_reviews()
-            self._get_image_link()
-            self._get_product_link()
-            self._generate_uuid()
-        self._save_data()
+            # self._get_sku()
+            # self._get_asin()
+            # self._get_reviews()
+            # self._get_image_link()
+            # self._get_product_link()
+            # self._generate_uuid()
+        # self._save_data()
             
         time.sleep(3)
         next = self.driver.find_element(by=By.XPATH, value=Config.XPATH_NEXT_PAGE)
