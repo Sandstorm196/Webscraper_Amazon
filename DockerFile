@@ -1,0 +1,9 @@
+FROM python:3.8-slim-buster
+
+COPY Amazon_copy.py . 
+
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD ['python', 'Amazon_copy.py']
