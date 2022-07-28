@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from tkinter import TRUE
 from unittest import result
 from dataclasses_json import dataclass_json
 import uuid
@@ -9,6 +10,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchElementException
 from sqlalchemy import create_engine
+from botocore.exceptions import ClientError
+# import boto3
 import sqlalchemy
 import os
 import urllib
@@ -16,8 +19,6 @@ import pandas as pd
 import Config_copy
 import time
 # import Credentials
-import boto3
-from botocore.exceptions import ClientError
 
 @dataclass_json
 @dataclass()
@@ -39,10 +40,9 @@ class Amazon:
         print("Initializing webscraper...")
         
         opt = webdriver.ChromeOptions()
-        opt.headless = False
+        opt.headless = True 
         opt.add_argument("--disable-notifications")
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
-        self.driver.maximize_window()
         self.driver.get(Config_copy.URL)
         self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
@@ -125,22 +125,21 @@ class Amazon:
         for product in search_results:
             product_links.append(product.get_attribute("href"))
         print(len(product_links))
-
+        
         all_products = []
         for product_link in product_links:
-            print(product_link)
+            print(type(product_link))
             try:
-                self.driver.get(product_link)
-                product_obj = self.__build_product_obj(Config_copy.product_xpath_dict)
-                print(product_obj)
-                all_products.append(product_obj)
-                print(all_products)
+                if product_link.startswith('http://') or product_link.startswith('https://'):
+                    self.driver.get(product_link)
+                    all_products.append(self.__build_product_obj(Config_copy.product_xpath_dict))
+                    print(all_products)
                 
             except Exception as error:
                 print("The error is: ",error)
                 pass
-                
-            print(all_products)
+
+        print(all_products)
 
 
     def __build_product_obj(self, product_xpath_dict: dict):
@@ -148,14 +147,10 @@ class Amazon:
         print('Building product object...')
 
         for keys, values in product_xpath_dict.items():
-            try: 
+            
                 current_attribute = self.driver.find_element(By.CLASS_NAME, values).text
                 setattr(self.product_data_container, keys, current_attribute)
-                print(self.product_data_container.price_list)
-                time.sleep(3)
-            except Exception as error:
-                print("The error is: ",error)
-                pass          
+                return self.product_data_container.price_list
             
               
     def __generate_uuid(self):
