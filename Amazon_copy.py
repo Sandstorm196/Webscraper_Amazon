@@ -119,24 +119,24 @@ class Amazon:
         print("Get the search results for the products.")
         
         container = self.driver.find_element(By.CSS_SELECTOR, 'div.s-main-slot') 
-        search_results = container.find_elements(By.XPATH, './/div[@class="a-section"]//a') 
+        search_results = container.find_elements(By.XPATH, "//div[@class='s-product-image-container aok-relative s-image-overlay-grey s-text-center s-padding-left-small s-padding-right-small s-flex-expand-height']//a")
+        print(len(search_results))
 
         product_links = []
         for product in search_results:
             product_links.append(product.get_attribute("href"))
         print(len(product_links))
+        print(product_links)
         
         all_products = []
         for product_link in product_links:
-            print(type(product_link))
             try:
-                if product_link.startswith('http://') or product_link.startswith('https://'):
-                    self.driver.get(product_link)
-                    all_products.append(self.__build_product_obj(Config_copy.product_xpath_dict))
-                    print(all_products)
+                self.driver.get(product_link)
+                all_products.append(self.__build_product_obj(Config_copy.product_xpath_dict))
+                print(all_products)
                 
             except Exception as error:
-                print("The error is: ",error)
+                print("The error is: ", error)
                 pass
 
         print(all_products)
@@ -149,8 +149,14 @@ class Amazon:
         for keys, values in product_xpath_dict.items():
             
                 current_attribute = self.driver.find_element(By.CLASS_NAME, values).text
-                setattr(self.product_data_container, keys, current_attribute)
-                return self.product_data_container.price_list
+                
+                if current_attribute == '':
+                    current_attribute = 'N/A'
+                    setattr(self.product_data_container, keys, current_attribute)
+                else:
+                    setattr(self.product_data_container, keys, current_attribute)
+                    
+        return self.product_data_container.price_list
             
               
     def __generate_uuid(self):
