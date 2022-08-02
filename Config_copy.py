@@ -8,19 +8,17 @@ XPATH_SEARCH_BOX = "//input[@id='twotabsearchtextbox']"
 XPATH_APPLE_BRAND = "//span[text()='Apple']"
 
 # They require .text
-product_xpath_dict = {"price_list" : "a-price-whole"
-                    #   "sku_list" : ".//span[contains(@class,'a-size-medium a-color-base a-text-normal')]",
-                    #   "tech_properties_list" : ".//div[contains(@class, 's-result-item s-asin')]",
-                    #   "reviews_list" : ".//div[@class='a-row a-size-small']/span[2]",
-                    #   "price_list": ".//span[contains(@class,'a-price-whole')]"
-                      }
+product_data_dict = {"price": ".//span[contains(@class,'a-price-whole')]",
+                     "sku" : "//span[contains(@class,'a-size-large product-title-word-break')]",
+                     "tech_properties" : "//ul[contains(@class, 'a-unordered-list a-vertical a-spacing-mini')]",
+                     "note" : "//div[contains(@id,'apEligibility_feature_div')]",
+                     "reviews" : "//div[@class='a-row a-size-small']/span[2]"}
 
 # They require .get_attribute('src') and .get_attribute('href') 
 # "image_link_list" : ".//img[@class='s-image']",
-# "product_link_list" : ".//a[@class='a-link-normal s-no-outline']"
 
 XPATH_IMAGES = "//img[@class='s-image']"
-# XPATH_SKU = ".//span[contains(@class,'a-size-medium a-color-base a-text-normal')]"
+XPATH_SKU = ".//span[contains(@class,'a-size-medium a-color-base a-text-normal')]"
 # XPATH_ASIN = ".//div[contains(@class, 's-result-item s-asin')]"
 # XPATH_REVIEWS = ".//div[@class='a-row a-size-small']/span[2]"
 # XPATH_IMAGE_LINK = ".//img[@class='s-image']"

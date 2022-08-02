@@ -8,7 +8,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import NoSuchElementException
 from sqlalchemy import create_engine
 from botocore.exceptions import ClientError
 # import boto3
@@ -24,14 +23,14 @@ import time
 @dataclass()
 class Data:    
     
-    price_list : list = field(default_factory=list) 
-    sku_list : list = field(default_factory=list) 
-    tech_properties_list : list = field(default_factory=list)
-    asin_list : list = field(default_factory=list) 
-    reviews_list : list = field(default_factory=list) 
-    image_link_list : list = field(default_factory=list) 
-    product_link_list : list = field(default_factory=list) 
-    uuidFour : list = field(default_factory=list) 
+    price: float = .0
+    sku: str = ""
+    tech_properties: str = ""
+    note: str = ""
+    reviews: int = 0
+    image_url: str = ""
+    product_url: str = ""
+    uuid: str = ""
 
 class Amazon:
     
@@ -47,7 +46,7 @@ class Amazon:
         self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
         self.num_page = 1
-        self.product_data_container = Data()
+        self.object = Data()
         # self.engine = create_engine(f"{Credentials.DATABASE_TYPE}+{Credentials.DBAPI}://{Credentials.USER}:{Credentials.PASSWORD}@{Credentials.HOST}:{Credentials.PORT}/{Credentials.DATABASE}")
         # self.engine.connect()
 
@@ -61,9 +60,10 @@ class Amazon:
             accept_button = self.driver.find_element(By.XPATH, Config_copy.XPATH_COOKIES)
             accept_button.click()
             time.sleep(2)
-        except  NoSuchElementException as error:
-            print("NoSuchElementException, cookies button has not been clicked:", error)
+        except  Exception as error:
+            print("Exception: ", error)
             pass
+
 
     def search(self):        
         '''Searching for the product in the Amazon website.'''
@@ -126,53 +126,37 @@ class Amazon:
         for product in search_results:
             product_links.append(product.get_attribute("href"))
         print(len(product_links))
-        print(product_links)
-        
-        all_products = []
-        for product_link in product_links:
-            try:
-                self.driver.get(product_link)
-                all_products.append(self.__build_product_obj(Config_copy.product_xpath_dict))
-                print(all_products)
                 
-            except Exception as error:
-                print("The error is: ", error)
-                pass
+        self.all_products = []
+        for product_link in product_links:
+            self.driver.get(product_link)
+            self.all_products.append(self.__build_product_obj(Config_copy.product_data_dict))
+            print(self.all_products)
 
-        print(all_products)
 
-
-    def __build_product_obj(self, product_xpath_dict: dict):
+    def __build_product_obj(self, object, product_data_dict: dict):
         '''It gets the all product information.'''
         print('Building product object...')
 
-        for keys, values in product_xpath_dict.items():
-            
-                current_attribute = self.driver.find_element(By.CLASS_NAME, values).text
-                
+        object.uuid = str(uuid.uuid4())
+        
+        for keys, values in product_data_dict.items():
+                time.sleep(2)
+                current_attribute = self.driver.find_element(By.XPATH, values).text.replace('\n',', ')
                 if current_attribute == '':
                     current_attribute = 'N/A'
-                    setattr(self.product_data_container, keys, current_attribute)
+                    setattr(object, keys, current_attribute)
                 else:
-                    setattr(self.product_data_container, keys, current_attribute)
+                    setattr(object, keys, current_attribute)
                     
-        return self.product_data_container.price_list
-            
-              
-    def __generate_uuid(self):
-        '''Generate a unique identifier.'''
-        print('Generating a unique identifier...')
-        
-        for u in range(len(self.product_data_container.sku_list)):
-            uuid_Four = str(uuid.uuid4())
-            self.product_data_container.uuidFour.append(uuid_Four)
-                    
-            
+        return object
+
+    
     def __save_to_rds(self):
         '''It saves the data from data class as json to the AWS RDS postgresql.'''
         print("The data has been saved to the AWS RDS postgresql.")
         
-        data_json = self.product_data_container.to_json()        
+        data_json = self.all_products.to_json()        
         df = pd.read_json(data_json)
         print(df)
         # df.to_sql('iPhone13', self.engine, if_exists='replace')
@@ -213,10 +197,9 @@ class Amazon:
             
             print(f'Page: {self.page + 1}')
             
-            
             # self._download_images()
             self.__get_search_results()
-            self.__build_product_obj(Config_copy.product_xpath_dict)
+            self.__build_product_obj(Config_copy.product_data_dict)
             self.__generate_uuid()
         self.__save_to_rds()
         # self.__upload_img_s3()
