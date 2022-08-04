@@ -1,18 +1,6 @@
 import unittest
 import Config
-from unittest.case import _AssertRaisesContext
 from Amazon import Amazon
-import sys
-import os
-import time
-from selenium.common.exceptions import ElementNotInteractableException
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-
-sys.path.append(os.path.pardir(os.path.pardir(__file__)))
-
-# sys.path.append("./Users/mansurcan/Documents/Ai_Core/Webscraper_Amazon/test_Amazon.py")
 
 class Test(unittest.TestCase):
     '''
@@ -22,51 +10,48 @@ class Test(unittest.TestCase):
     - click_on_brand()
     (Arrange, Act, Assert)
     '''
-    
     def setUp(self):
-        '''Setting up the environment'''
+        '''Setting the environment.'''
+        print('Setting the environment by creating Amazon object.')
         
-        opt = webdriver.ChromeOptions()
-        opt.headless = False
-        opt.add_argument("--disable-notifications")
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
-        self.driver.get(Config.URL)
-        self.driver.set_page_load_timeout(10)
-        self.driver.implicitly_wait(10)
-    
-    def test_website(self):
+        self.amazon = Amazon()
+        
+        
+    def test_init(self):
         '''Test that website is Amazon.'''
+        print("Test that website is Amazon.")
         
-        URL = "https://www.amazon.co.uk/"
-        self.driver.get(URL)        
-        self.assertEqual(URL,Config.URL)
+        self.assertEqual(self.amazon.driver.current_url, Config.URL)
          
     
     def test_accept_cookies(self):
         '''Test the accept_cookies button whether it is clicked on.'''
+        print("Test that the accept_cookies button is clicked on")
         
-        Amazon.accept_cookies("//input[@type='submit' and @id='sp-cc-accept']")
-        with self.assertRaises(ElementNotInteractableException):
-            Amazon.accept_cookies("//input[@type='submit' and @id='sp-cc-accept']")
+        self.assertEqual(self.amazon.accept_cookies, True)    
+        
         
     def test_search(self):
         '''Test the search term is on the website.'''
+        print("Test that search term is iPhone 13.")
         
-        expected_term = ['iPhone 13']
-        actual_term = Amazon.search("//input[@id='twotabsearchtextbox']")
-        self.assertEqual(expected_term, actual_term)
+        # self.assertEqual(Config.SEARCH_TERM, self.amazon.driver.)
+        pass
         
     def test_click_on_brand(self):
         '''Test click on brand box when clicking on Apple brand.'''
+        print("Test that click on brand box when clicking on Apple brand is working.")
         
         pass
         
         
     def tearDown(self):
         '''This is used to remove any of the variable set up from memory.'''
+        print("Test tearDown called.")
         
-        self.driver.close()   
-        self.driver.quit() 
+        self.amazon.driver.close()   
+        self.amazon.driver.quit() 
+        
         
 if __name__ == '__main__':
     '''Main method'''

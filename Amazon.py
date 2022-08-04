@@ -1,5 +1,4 @@
-from dataclasses import dataclass, field
-from tkinter import TRUE
+from dataclasses import dataclass
 from unittest import result
 from dataclasses_json import dataclass_json
 import uuid
@@ -15,8 +14,8 @@ import sqlalchemy
 import os
 import urllib
 import pandas as pd
-import Config_copy
 import time
+import Config
 # import Credentials
 
 @dataclass_json
@@ -42,7 +41,7 @@ class Amazon:
         opt.headless = True 
         opt.add_argument("--disable-notifications")
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
-        self.driver.get(Config_copy.URL)
+        self.driver.get(Config.URL)
         self.driver.set_page_load_timeout(10)
         self.driver.implicitly_wait(10)
         self.num_page = 1
@@ -57,11 +56,10 @@ class Amazon:
         
         time.sleep(2)
         try: 
-            accept_button = self.driver.find_element(By.XPATH, Config_copy.XPATH_COOKIES)
+            accept_button = self.driver.find_element(By.XPATH, Config.XPATH_COOKIES)
             accept_button.click()
             time.sleep(2)
-        except  Exception as error:
-            print("Exception: ", error)
+        except:
             pass
 
 
@@ -69,15 +67,15 @@ class Amazon:
         '''Searching for the product in the Amazon website.'''
         print("Searching for the product...")
         
-        search_input = self.driver.find_element(By.XPATH, Config_copy.XPATH_SEARCH_BOX)
-        search_input.send_keys(Config_copy.SEARCH_TERM)
+        search_input = self.driver.find_element(By.XPATH, Config.XPATH_SEARCH_BOX)
+        search_input.send_keys(Config.SEARCH_TERM)
         search_input.send_keys(Keys.RETURN)
         time.sleep(2)
         
 
     def click_on_brand(self):
         time.sleep(2)
-        accept_button = self.driver.find_element(By.XPATH, Config_copy.XPATH_APPLE_BRAND)
+        accept_button = self.driver.find_element(By.XPATH, Config.XPATH_APPLE_BRAND)
         accept_button.click()
         
         
@@ -100,7 +98,7 @@ class Amazon:
         time.sleep(7)
         
         try:
-            img_element = self.driver.find_elements(by=By.XPATH, value=Config_copy.XPATH_IMAGES)
+            img_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_IMAGES)
             print(len(img_element))
 
             src = [image.get_attribute('src') for image in img_element]
@@ -130,17 +128,17 @@ class Amazon:
         self.all_products = []
         for product_link in product_links:
             self.driver.get(product_link)
-            self.all_products.append(self.__build_product_obj(Config_copy.product_data_dict))
+            self.all_products.append(self.__build_product_obj(Config.data_dict))
             print(self.all_products)
 
 
-    def __build_product_obj(self, object, product_data_dict: dict):
+    def __build_product_obj(self, object, data_dict: dict):
         '''It gets the all product information.'''
         print('Building product object...')
 
         object.uuid = str(uuid.uuid4())
         
-        for keys, values in product_data_dict.items():
+        for keys, values in data_dict.items():
                 time.sleep(2)
                 current_attribute = self.driver.find_element(By.XPATH, values).text.replace('\n',', ')
                 if current_attribute == '':
@@ -199,13 +197,12 @@ class Amazon:
             
             # self._download_images()
             self.__get_search_results()
-            self.__build_product_obj(Config_copy.product_data_dict)
-            self.__generate_uuid()
+            self.__build_product_obj(Config.data_dict)
         self.__save_to_rds()
         # self.__upload_img_s3()
             
         time.sleep(3)
-        next = self.driver.find_element(by=By.XPATH, value=Config_copy.XPATH_NEXT_PAGE)
+        next = self.driver.find_element(by=By.XPATH, value=Config.XPATH_NEXT_PAGE)
         next.click()
                 
 if __name__ == "__main__":  
