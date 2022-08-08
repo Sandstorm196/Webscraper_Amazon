@@ -9,14 +9,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from sqlalchemy import create_engine
 from botocore.exceptions import ClientError
-# import boto3
+import boto3
 import sqlalchemy
 import os
 import urllib
 import pandas as pd
 import time
 import Config
-# import Credentials
+import Credentials
 
 @dataclass_json
 @dataclass()
@@ -38,7 +38,7 @@ class Amazon:
         print("Initializing webscraper...")
         
         opt = webdriver.ChromeOptions()
-        opt.headless = True 
+        opt.headless = True
         opt.add_argument("--disable-notifications")
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
         self.driver.get(Config.URL)
@@ -46,8 +46,8 @@ class Amazon:
         self.driver.implicitly_wait(10)
         self.num_page = 1
         self.object = Data()
-        # self.engine = create_engine(f"{Credentials.DATABASE_TYPE}+{Credentials.DBAPI}://{Credentials.USER}:{Credentials.PASSWORD}@{Credentials.HOST}:{Credentials.PORT}/{Credentials.DATABASE}")
-        # self.engine.connect()
+        self.engine = create_engine(f"{Credentials.DATABASE_TYPE}+{Credentials.DBAPI}://{Credentials.USER}:{Credentials.PASSWORD}@{Credentials.HOST}:{Credentials.PORT}/{Credentials.DATABASE}")
+        self.engine.connect()
 
         
     def accept_cookies(self):   
@@ -79,7 +79,7 @@ class Amazon:
         accept_button.click()
         
         
-    def create_images_folder(self):
+    def __create_images_folder(self):
         '''It creates the images folder.'''
         print('Creating images folder...')
         
@@ -112,7 +112,7 @@ class Amazon:
             print('Could not get the image:', error)
             
             
-    def __get_search_results(self):
+    def __get_search_results(self, data_dict : dict):
         '''It gets the search results for the products.'''
         print("Get the search results for the products.")
         
@@ -127,27 +127,28 @@ class Amazon:
                 
         self.all_products = []
         for product_link in product_links:
+            self.object.product_url = product_link
             self.driver.get(product_link)
-            self.all_products.append(self.__build_product_obj(Config.data_dict))
+            self.all_products.append(self.__build_product_obj(data_dict))
             print(self.all_products)
 
 
-    def __build_product_obj(self, object, data_dict: dict):
+    def __build_product_obj(self, data_dict: dict):
         '''It gets the all product information.'''
         print('Building product object...')
 
-        object.uuid = str(uuid.uuid4())
+        self.object.uuid = str(uuid.uuid4())
         
         for keys, values in data_dict.items():
                 time.sleep(2)
                 current_attribute = self.driver.find_element(By.XPATH, values).text.replace('\n',', ')
                 if current_attribute == '':
                     current_attribute = 'N/A'
-                    setattr(object, keys, current_attribute)
+                    setattr(self.object, keys, current_attribute)
                 else:
-                    setattr(object, keys, current_attribute)
+                    setattr(self.object, keys, current_attribute)
                     
-        return object
+        return self.object
 
     
     def __save_to_rds(self):
@@ -157,32 +158,32 @@ class Amazon:
         data_json = self.all_products.to_json()        
         df = pd.read_json(data_json)
         print(df)
-        # df.to_sql('iPhone13', self.engine, if_exists='replace')
+        df.to_sql('iPhone13', self.engine, if_exists='replace')
 
 
-    # def __upload_img_s3(self):
-    #     '''It uploads the images, what have been scraped, to the Amazon S3 bucket.'''
-    #     print("Uploading images to AWS S3...")
+    def __upload_img_s3(self):
+        '''It uploads the images, what have been scraped, to the Amazon S3 bucket.'''
+        print("Uploading images to AWS S3...")
         
-    #     s3_client = boto3.client('s3',
-    #                       aws_access_key_id = Credentials.ACCESS_KEY_ID,
-    #                       aws_secret_access_key = Credentials.SECRECT_ACCESS_KEY)
+        s3_client = boto3.client('s3',
+                          aws_access_key_id = Credentials.ACCESS_KEY_ID,
+                          aws_secret_access_key = Credentials.SECRECT_ACCESS_KEY)
          
-    #     images_folder = os.path.join(os.getcwd(), 'iPhone_13_images')
+        images_folder = os.path.join(os.getcwd(), 'iPhone_13_images')
         
-    #     for file in os.listdir(images_folder):
-    #         if not file.startswith('~'):
-    #             try:
-    #                 print('Uploading file {0}...'.format(file))
-    #                 s3_client.upload_file(
-    #                     os.path.join(images_folder, file),
-    #                     Credentials.BUCKET_NAME,
-    #                     file)
+        for file in os.listdir(images_folder):
+            if not file.startswith('~'):
+                try:
+                    print('Uploading file {0}...'.format(file))
+                    s3_client.upload_file(
+                        os.path.join(images_folder, file),
+                        Credentials.BUCKET_NAME,
+                        file)
                     
-    #             except ClientError as error:
-    #                 print(f'Credential is incorrect: {error}')
-    #             except Exception as error:
-    #                 print(f'Error: {error}')
+                except ClientError as error:
+                    print(f'Credential is incorrect: {error}')
+                except Exception as error:
+                    print(f'Error: {error}')
 
         
     def _scrape_data(self):
@@ -196,7 +197,7 @@ class Amazon:
             print(f'Page: {self.page + 1}')
             
             # self._download_images()
-            self.__get_search_results()
+            self.__get_search_results(Config.data_dict)
             self.__build_product_obj(Config.data_dict)
         self.__save_to_rds()
         # self.__upload_img_s3()
