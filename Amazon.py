@@ -51,7 +51,14 @@ class Amazon:
 
         
     def accept_cookies(self):   
-        '''Accepts cookies...'''     
+        '''
+        Finds and clicks the "Accept" cookies button
+        
+        Parameters
+        ----------
+        xpath: str
+            The Xpath of the Accept Cookies button
+        '''     
         print("Accepting cookies...")
         
         time.sleep(2)
@@ -74,13 +81,24 @@ class Amazon:
         
 
     def click_on_brand(self):
+        '''
+        Finds and clicks the "Apple" icon box
+
+        Parameters
+        ----------
+        xpath: str
+            The Xpath of the element to be clicked
+        '''
+
         time.sleep(2)
         accept_button = self.driver.find_element(By.XPATH, Config.XPATH_APPLE_BRAND)
         accept_button.click()
         
         
     def __create_images_folder(self):
-        '''It creates the images folder.'''
+        '''
+        It creates the images folder.
+        '''
         print('Creating images folder...')
         
         self.image_path = os.getcwd()
@@ -91,7 +109,9 @@ class Amazon:
                         
             
     def __download_images(self):
-        '''Downloads images from the Amazon website with the given number of the page.'''
+        '''
+        Downloads images from the Amazon website with the given number of the page.
+        '''
         print("Downloading images...")
 
         count = 1
@@ -113,7 +133,9 @@ class Amazon:
             
             
     def __get_search_results(self, data_dict : dict):
-        '''It gets the search results for the products.'''
+        '''
+        It gets the search results for the products.
+        '''
         print("Get the search results for the products.")
         
         container = self.driver.find_element(By.CSS_SELECTOR, 'div.s-main-slot') 
@@ -134,7 +156,20 @@ class Amazon:
 
 
     def __build_product_obj(self, data_dict: dict):
-        '''It gets the all product information.'''
+        '''
+        It gets the all product information.
+        
+        Parameters
+        ----------
+        Xpath of the product:
+        "price": str
+        "sku" : str
+        "tech_properties" : str
+        "note" : str
+        "reviews" : str
+             
+        It returns the object with all product information available.
+        '''
         print('Building product object...')
 
         self.object.uuid = str(uuid.uuid4())
