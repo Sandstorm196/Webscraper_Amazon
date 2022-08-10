@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from genericpath import exists
 from unittest import result
 from dataclasses_json import dataclass_json
 import uuid
@@ -8,15 +9,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from sqlalchemy import create_engine
+from sqlalchemy import inspect
 from botocore.exceptions import ClientError
 import boto3
-import sqlalchemy
 import os
 import urllib
 import pandas as pd
 import time
 import Config
 import Credentials
+
 
 @dataclass_json
 @dataclass()
@@ -30,7 +32,8 @@ class Data:
     image_url: str = ""
     product_url: str = ""
     uuid: str = ""
-
+    asin: str = ""
+    
 class Amazon:
     
     def __init__(self):
@@ -39,7 +42,11 @@ class Amazon:
         
         opt = webdriver.ChromeOptions()
         opt.headless = True
-        opt.add_argument("--disable-notifications")
+        # opt.add_argument("--no-sandbox")
+        # opt.add_argument("--disable-dev-shm-usage")
+        # opt.add_argument("--window-size=1920,1080")
+        # opt.add_argument("--start-maximized")        
+        # opt.add_argument("--disable-notifications")
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opt)
         self.driver.get(Config.URL)
         self.driver.set_page_load_timeout(10)
@@ -66,6 +73,7 @@ class Amazon:
             accept_button = self.driver.find_element(By.XPATH, Config.XPATH_COOKIES)
             accept_button.click()
             time.sleep(2)
+            pass
         except:
             pass
 
@@ -108,38 +116,28 @@ class Amazon:
             os.mkdir(self.image_path)
                         
             
-    def __download_images(self):
+    def __download_image(self):
         '''
         Downloads images from the Amazon website with the given number of the page.
         '''
         print("Downloading images...")
-
-        count = 1
-        time.sleep(7)
         
-        try:
-            img_element = self.driver.find_elements(by=By.XPATH, value=Config.XPATH_IMAGES)
-            print(len(img_element))
-
-            src = [image.get_attribute('src') for image in img_element]
-            print(len(src))
-            
-            for i in src: 
-                urllib.request.urlretrieve(i, os.path.join(self.image_path, f'page_{self.page + 1}' + '_image_' + str(count) + '.jpg'))
-                count += 1
-                
-        except Exception as error:
-            print('Could not get the image:', error)
-            
-            
+        image_name = f'page_{self.page + 1}' + self.object.asin + '_image_.jpg'
+        
+        if not os.path.exists(image_name):
+            img_element = self.driver.find_element(By.XPATH, Config.XPATH_IMAGES).get_attribute('src')
+            urllib.request.urlretrieve(img_element, os.path.join(self.image_path, f'page_{self.page + 1}' + f'_asin_{self.object.asin}' + '_image_.jpg'))
+            pass
+        
     def __get_search_results(self, data_dict : dict):
         '''
         It gets the search results for the products.
         '''
         print("Get the search results for the products.")
         
-        container = self.driver.find_element(By.CSS_SELECTOR, 'div.s-main-slot') 
-        search_results = container.find_elements(By.XPATH, "//div[@class='s-product-image-container aok-relative s-image-overlay-grey s-text-center s-padding-left-small s-padding-right-small s-flex-expand-height']//a")
+        # container = self.driver.find_element(By.CSS_SELECTOR, 'div.s-main-slot') 
+        container = self.driver.find_element(By.XPATH, '//div[@class="s-main-slot s-result-list s-search-results sg-row"]')
+        search_results = container.find_elements(By.XPATH, "//div[@class='s-product-image-container aok-relative s-image-overlay-grey s-text-center s-padding-left-small s-padding-right-small s-flex-expand-height s-media-gallery s-media-gallery-treatment-T1']//a")
         print(len(search_results))
 
         product_links = []
@@ -151,6 +149,7 @@ class Amazon:
         for product_link in product_links:
             self.object.product_url = product_link
             self.driver.get(product_link)
+            self.__download_image()
             self.all_products.append(self.__build_product_obj(data_dict))
             print(self.all_products)
 
@@ -191,10 +190,20 @@ class Amazon:
         print("The data has been saved to the AWS RDS postgresql.")
         
         data_json = self.all_products.to_json()        
-        df = pd.read_json(data_json)
-        print(df)
-        df.to_sql('iPhone13', self.engine, if_exists='replace')
+        new_df = pd.read_json(data_json)
+        
+        print(new_df)
+        # print(inspect(self.engine).get_table_names())
+        # df.to_sql('iPhone13', self.engine, if_exists='append', index=False)
+        
+        # old_df = pd.read_sql_table('iPhone13', con=self.engine)
+        
+        # merged_dfs = pd.concat([old_df, new_df]) 
+        # merged_dfs = merged_dfs.drop_duplicates(keep=False)
+        # merged_dfs.to_sql('candido_info', self.engine, if_exists='append', index=False)
 
+        print("New products have been uploaded to the database.")        
+        
 
     def __upload_img_s3(self):
         '''It uploads the images, what have been scraped, to the Amazon S3 bucket.'''
@@ -225,13 +234,12 @@ class Amazon:
         '''It scrapes all the data...'''
         print('Scraping all the data...')
         
-        # self.create_images_folder()
+        self.__create_images_folder()
         
         for self.page in range(self.num_page):
             
             print(f'Page: {self.page + 1}')
             
-            # self._download_images()
             self.__get_search_results(Config.data_dict)
             self.__build_product_obj(Config.data_dict)
         self.__save_to_rds()
