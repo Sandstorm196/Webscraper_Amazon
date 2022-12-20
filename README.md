@@ -28,8 +28,8 @@ The project uses Python, Selenium, Chromedrive, AWS S3, AWS RDS to perform the a
 - Python 3.10.4
 - Chromedriver 101.0.4951.41 
 - Chrome 101.0.4951.67
-- AWS S3 (in progress)
-- AWS RDS (in progress)
+- AWS S3 
+- AWS RDS
 - Docker (in progress)
 - Postgresql (in progress)
 
